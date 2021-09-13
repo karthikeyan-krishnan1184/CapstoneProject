@@ -1,0 +1,295 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+    <style>
+        table {
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            cursor: pointer;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 16px;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2
+        }
+    </style>
+</head>
+<body style="padding-top:20px">
+    <div class="col-md-10 col-md-offset-1">
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-6">
+                    <h2>E-Healthcare Medicine Portal</h2>
+                </div>
+                <input id="btnLogoff" class="btn btn-success pull-right"
+                       type="button" value="Log Off" />
+            </div>
+        </div>
+        <div id="divData">
+            <table class="table table-bordered" id="tblData">
+                <thead>
+                    <tr class="success">
+                        <td>Edit</td>
+                        <td>ID</td>
+                        <th onclick="sortTable(0) ">MedicineName</th>
+                        <th onclick="sortTable(1)">Category</th>
+                        <td>Price</td>
+                        <td>Seller</td>
+                        <td>Descriptions</td>
+                        <td>MedicineImage</td>
+                        <td>Delete</td>
+                        <td>Add To cart</td>
+                    </tr>
+                </thead>
+                <tbody id="tblBody"></tbody>
+            </table>
+        </div>
+        <div class="modal fade" tabindex="-1" id="errorModal"
+             data-keyboard="false" data-backdrop="static">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal">
+                            &times;
+                        </button>
+                        <h4 class="modal-title">Session Expired</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <h2 class="modal-title">Please close this message to login again</h2>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger"
+                                data-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="divError" class="alert alert-danger collapse">
+            <a id="linkClose" href="#" class="close">&times;</a>
+            <div id="divErrorText"></div>
+        </div>
+
+        <input id="btnAddMedicine" class="btn btn-success"
+               type="button" value="Add Medicine" />
+        <input id="btnViewUsersList" class="btn btn-success"
+               type="button" value="View List Of Users" />
+    </div>
+
+
+    <script src="Scripts/jquery-3.4.1.min.js"></script>
+    <script src="Scripts/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script type="text/javascript">
+        $(document).ready(function () {
+            if (sessionStorage.getItem('accessToken') == null) {
+                window.location.href = "Login.html";
+            }
+
+            $('#linkClose').click(function () {
+                $('#divError').hide('fade');
+            });
+
+            $('#errorModal').on('hidden.bs.modal', function () {
+                window.location.href = "Login.html";
+            });
+            $('#btnLogoff').click(function () {
+                sessionStorage.removeItem('accessToken');
+                window.location.href = "Login.html";
+            });
+
+            $('#btnAddMedicine').click(function () {
+                window.location.href = "AddMedicine.html";
+            });
+
+            $('#btnViewUsersList').click(function () {
+                window.location.href = "UserList.html";
+            });
+
+            LoadMedicineList();    
+        });
+        function LoadMedicineList() {
+            // Call Web API to get a list of employees
+            $.ajax({
+                url: '/api/Medicine',
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer '
+                        + sessionStorage.getItem('accessToken')
+                },
+                success: function (data) {
+                    $('#divData').removeClass('hidden');
+                    $('#tblBody').empty();
+
+                    $.each(data, function (index, value) {
+                        var row = $('<tr><td>' +
+                            "<button type='button' " +
+                            "onclick='productGet(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-edit' />"
+                            + "</button>" + '</td><td>'
+                            + value.ID + '</td><td>'
+                            + value.MedicineName + '</td><td>'
+                            + value.Category + '</td><td>'
+                            + value.Price + '</td><td>'
+                            + value.Seller + '</td><td>'
+                            + value.Descriptions + '</td><td>'                          
+                            +
+                            "<button type='button' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon fa fa-medkit' />"
+                            + "</button>" + '</td><td>'                  
+                            +
+                            "<button type='button' " +
+                            "onclick='productDelete(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-remove' />" +
+                            "</button>" +
+                            '</td><td>'
+                            +
+                            "<button type='button' " +
+                            "onclick='productAddToCart(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-shopping-cart' />" +
+                            "</button>" +
+                            '</td></tr>');
+                        $('#tblData').append(row);
+
+                    });
+                },
+                error: function (jQXHR) {
+                    // If status code is 401, access token expired, so
+                    // redirect the user to the login page
+                    if (jQXHR.status == "401") {
+                        $('#errorModal').modal('show');
+                    }
+                    else {
+                        $('#divErrorText').text(jqXHR.responseText);
+                        $('#divError').show('fade');
+                    }
+                }
+            });
+        }
+        function productGet(ctl) {
+            // Get product id from data- attribute
+            var id = $(ctl).data("id");
+
+            // Store product id in hidden field
+            $("#tblData").val(id);
+
+            // Call Web API to get a list of Products
+            $.ajax({
+                url: "/api/Medicine/" + id,
+                type: 'GET',
+                headers: {
+                    'Authorization': 'Bearer '
+                        + sessionStorage.getItem('accessToken')
+                },
+                dataType: 'json',
+                success: function (product) {
+                    /* productToFields(product);*/
+
+                    // Change Update Button Text
+                    $("#updateButton").text("Update");
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+        function productDelete(ctl) {
+            var id = $(ctl).data("id");
+
+
+            $.ajax({
+                url: "/api/Medicine/" + id,
+                type: 'DELETE',
+                success: function (product) {
+                    $(ctl).parents("tr").remove();
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+        function productAddToCart(ctl) {
+            window.location.href = "AddToCart.html"
+        }
+        function sortTable(n) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+            table = document.getElementById("tblData");
+            switching = true;
+            //Set the sorting direction to ascending:
+            dir = "asc";
+            /*Make a loop that will continue until
+            no switching has been done:*/
+            while (switching) {
+                //start by saying: no switching is done:
+                switching = false;
+                rows = table.rows;
+                /*Loop through all table rows (except the
+                first, which contains table headers):*/
+                for (i = 1; i < (rows.length - 1); i++) {
+                    //start by saying there should be no switching:
+                    shouldSwitch = false;
+                    /*Get the two elements you want to compare,
+                    one from current row and one from the next:*/
+                    x = rows[i].getElementsByTagName("TD")[n];
+                    y = rows[i + 1].getElementsByTagName("TD")[n];
+                    /*check if the two rows should switch place,
+                    based on the direction, asc or desc:*/
+                    if (dir == "asc") {
+                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                            //if so, mark as a switch and break the loop:
+                            shouldSwitch = true;
+                            break;
+                        }
+                    } else if (dir == "desc") {
+                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                            //if so, mark as a switch and break the loop:
+                            shouldSwitch = true;
+                            break;
+                        }
+                    }
+                }
+                if (shouldSwitch) {
+                    /*If a switch has been marked, make the switch
+                    and mark that a switch has been done:*/
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    //Each time a switch is done, increase this count by 1:
+                    switchcount++;
+                } else {
+                    /*If no switching has been done AND the direction is "asc",
+                    set the direction to "desc" and run the while loop again.*/
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    }
+                }
+            }
+        }
+
+       
+    </script>
+</body>
+</html>
