@@ -32,7 +32,12 @@
             <div class="row">
                 <div class="col-sm-6">
                     <h2>E-Healthcare Medicine Portal</h2>
-                </div>
+
+                </div>               
+
+                    <input type="text" id="myInput" onkeyup="LoadMedicineListByID()" placeholder="Search for Medicines.." title="Type in a medicine">              
+
+
                 <input id="btnLogoff" class="btn btn-success pull-right"
                        type="button" value="Log Off" />
             </div>
@@ -89,6 +94,7 @@
                type="button" value="Add Medicine" />
         <input id="btnViewUsersList" class="btn btn-success"
                type="button" value="View List Of Users" />
+        
     </div>
 
 
@@ -121,7 +127,8 @@
                 window.location.href = "UserList.html";
             });
 
-            LoadMedicineList();    
+           /* LoadMedicineList();*/
+            LoadMedicineListByID();
         });
         function LoadMedicineList() {
             // Call Web API to get a list of employees
@@ -149,13 +156,13 @@
                             + value.Category + '</td><td>'
                             + value.Price + '</td><td>'
                             + value.Seller + '</td><td>'
-                            + value.Descriptions + '</td><td>'                          
+                            + value.Descriptions + '</td><td>'
                             +
                             "<button type='button' " +
                             "class='btn btn-default' " +
                             "data-id='" + value.ID + "'>" +
                             "<span class='glyphicon fa fa-medkit' />"
-                            + "</button>" + '</td><td>'                  
+                            + "</button>" + '</td><td>'
                             +
                             "<button type='button' " +
                             "onclick='productDelete(this);' " +
@@ -289,7 +296,75 @@
             }
         }
 
-       
+        function LoadMedicineListByID() {
+             var id = document.getElementById("myInput").value;
+            $('#tblBody').empty();
+        $.ajax({
+            url: '/api/Medicine/' + id,
+            method: 'GET',           
+                headers: {
+                    'Authorization': 'Bearer '
+                        + sessionStorage.getItem('accessToken')
+            },           
+                success: function (data) {
+                    $('#divData').removeClass('hidden');
+                    $('#tblBody').empty();
+
+                    $.each(data, function (index, value) {
+                        var row = $('<tr><td>' +
+                            "<button type='button' " +
+                            "onclick='productGet(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-edit' />"
+                            + "</button>" + '</td><td>'
+                            + value.ID + '</td><td>'
+                            + value.MedicineName + '</td><td>'
+                            + value.Category + '</td><td>'
+                            + value.Price + '</td><td>'
+                            + value.Seller + '</td><td>' 
+                            + value.Descriptions + '</td><td>'
+                            +
+                            "<button type='button' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon fa fa-medkit' />"
+                            + "</button>" + '</td><td>'
+                            +
+                            "<button type='button' " +
+                            "onclick='productDelete(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-remove' />" +
+                            "</button>" +
+                            '</td><td>'
+                            +
+                            "<button type='button' " +
+                            "onclick='productAddToCart(this);' " +
+                            "class='btn btn-default' " +
+                            "data-id='" + value.ID + "'>" +
+                            "<span class='glyphicon glyphicon-shopping-cart' />" +
+                            "</button>" +
+                            '</td></tr>');
+                        $('#tblData').append(row);
+
+                    });
+                },
+                error: function (jQXHR) {
+                    // If status code is 401, access token expired, so
+                    // redirect the user to the login page
+                    if (jQXHR.status == "401") {
+                        $('#errorModal').modal('show');
+                    }
+                    else {
+                        $('#divErrorText').text(jqXHR.responseText);
+                        $('#divError').show('fade');
+                    }
+                }
+            });
+        }
+
+
     </script>
 </body>
 </html>
